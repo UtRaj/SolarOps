@@ -1,0 +1,6 @@
+{
+  "name": "Solar Grid & Logistics Management Platform",
+  "description": "Real-time solar microgrid telemetry, AI merchant order delivery quotation chat, and electric fleet logistics platform with automated timed dispatch, capability-matched trucks, and battery storage.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

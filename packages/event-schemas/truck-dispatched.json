@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TruckDispatchedEvent",
+  "type": "object",
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "event_type": { "type": "string", "enum": ["TruckDispatched"] },
+    "schema_version": { "type": "integer", "const": 1 },
+    "aggregate_type": { "type": "string", "const": "truck" },
+    "aggregate_id": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "truck_id": { "type": "integer" },
+        "origin_point_id": { "type": "integer" },
+        "delivery_stop_ids": { "type": "array", "items": { "type": "integer" } },
+        "total_weight_kg": { "type": "number" }
+      },
+      "required": ["truck_id", "delivery_stop_ids", "total_weight_kg"]
+    }
+  },
+  "required": ["event_id", "event_type", "schema_version", "aggregate_type", "aggregate_id", "timestamp", "payload"]
+}

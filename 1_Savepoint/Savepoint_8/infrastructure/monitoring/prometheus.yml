@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: "solarops-api"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["localhost:3000"]
+        labels:
+          environment: "production"
+          service: "solarops-platform"

@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.git
+.github
+.vite
+.dist
+coverage
+1_Savepoint
+apps/api/.venv
+apps/api/__pycache__
+**/__pycache__
+**/.DS_Store
+.env
+.env.*
+!/.env.example

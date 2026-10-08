@@ -1,0 +1,22 @@
+[project]
+name = "solarops-api"
+version = "1.0.0"
+description = "SolarOps Production-Grade Grid Operations & EV Fleet API"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "pydantic>=2.6.4",
+    "pydantic-settings>=2.2.1",
+    "sqlalchemy>=2.0.28",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.1",
+    "redis>=5.0.3",
+    "nats-py>=2.7.2",
+    "python-dotenv>=1.0.1"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

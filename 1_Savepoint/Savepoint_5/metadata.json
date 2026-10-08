@@ -1,0 +1,6 @@
+{
+  "name": "Solar Grid & Logistics Management Platform",
+  "description": "Real-time solar microgrid telemetry and multi-stop electric truck fleet logistics platform with 3 grid stations, solar farms, super battery reserve, and automated 15-point delivery dispatch.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

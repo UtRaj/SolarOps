@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OrderCreatedEvent",
+  "type": "object",
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "event_type": { "type": "string", "enum": ["OrderCreated"] },
+    "schema_version": { "type": "integer", "const": 1 },
+    "aggregate_type": { "type": "string", "const": "order" },
+    "aggregate_id": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "order_id": { "type": "string" },
+        "customer_name": { "type": "string" },
+        "total_fare": { "type": "number" },
+        "service_type": { "type": "string" }
+      },
+      "required": ["order_id", "customer_name", "total_fare"]
+    }
+  },
+  "required": ["event_id", "event_type", "schema_version", "aggregate_type", "aggregate_id", "timestamp", "payload"]
+}
