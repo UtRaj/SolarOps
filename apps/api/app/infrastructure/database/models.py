@@ -181,3 +181,15 @@ class OutboxEventModel(Base):
     causation_id = Column(String(64), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow)
     published_at = Column(DateTime(timezone=True), nullable=True)
+
+class DeadLetterEventModel(Base):
+    __tablename__ = "dead_letter_events"
+
+    id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    original_event_id = Column(String(64), nullable=False, unique=True)
+    event_type = Column(String(128), nullable=False)
+    failure_reason = Column(Text, nullable=False)
+    retry_count = Column(Integer, nullable=False, default=3)
+    payload = Column(JSON, nullable=False)
+    quarantined_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    retried_at = Column(DateTime(timezone=True), nullable=True)

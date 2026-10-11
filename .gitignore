@@ -1,8 +1,41 @@
+# Dependencies and package-manager caches
 node_modules/
-build/
+.npm/
+.pnpm-store/
+
+# Generated frontend output
 dist/
+build/
 coverage/
-.DS_Store
+.vite/
+
+# Local logs and reports
+logs/
 *.log
-.env*
+
+# Environment secrets (keep the checked-in template)
+.env
+.env.*
 !.env.example
+
+# Python environments, caches, and test output
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+
+# Local IDE and operating-system files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Local savepoints and temporary databases
+1_Savepoint/
+*.sqlite
+*.sqlite3

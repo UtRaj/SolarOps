@@ -1,5 +1,5 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "SolarOps Clean Energy & EV Fleet Platform"
@@ -23,11 +23,11 @@ class Settings(BaseSettings):
     NATS_URL: str = os.getenv("NATS_URL", "nats://localhost:4222")
     NATS_STREAM_NAME: str = "SOLAROPS_EVENTS"
     NATS_SUBJECT_PREFIX: str = "solarops.events"
+    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
     # AI Integration
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
-    class Config:
-        case_sensitive = True
+    model_config = SettingsConfigDict(case_sensitive=True)
 
 settings = Settings()

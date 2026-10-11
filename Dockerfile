@@ -3,7 +3,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --legacy-peer-deps --no-fund --no-audit
+RUN npm ci --legacy-peer-deps --no-fund --no-audit
 
 COPY . .
 RUN npm run build

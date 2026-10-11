@@ -49,7 +49,23 @@ interface MerchantOrderChatProps {
 
 const QUICK_PROMPTS = [
   {
-    label: '📦 Multi-Stop (2 Deliveries)',
+    label: '🔋 BESS Storage Dynamics',
+    text: 'What is the BESS Super Battery storage capacity, current SoC, and active thermal cooling limits?'
+  },
+  {
+    label: '☀️ Solar Microgrid Physics',
+    text: 'Explain how the 5 solar farms generate power and how the diurnal curve physics work.'
+  },
+  {
+    label: '⚡ 48 kW Fast DC Charger Bays',
+    text: 'What are the fleet charging bay limits and how does Redis prevent charger bay contention?'
+  },
+  {
+    label: '🏛️ Transactional Outbox & NATS',
+    text: 'Explain the Transactional Outbox pattern, NATS JetStream event stream, and Dead Letter Queue in this architecture.'
+  },
+  {
+    label: '📦 Multi-Stop Dry Van (2 Deliveries)',
     text: 'Need multi-stop dispatch from DP-02: drop 400 kg at DP-07, then 300 kg at DP-11 at 16:30 with standard dry van.'
   },
   {
@@ -59,14 +75,6 @@ const QUICK_PROMPTS = [
   {
     label: '🏗️ Heavy Flatbed Rig',
     text: 'Dispatch heavy machinery parts from DP-03 to DP-14, 2,600 kg at 16:15 using heavy-duty flatbed with hydraulic tailgate.'
-  },
-  {
-    label: '⚡ Rapid Sprinter EV',
-    text: 'Urgent priority parcel shipment from DP-06 to DP-07, 350 kg needed at 17:00 express rapid sprinter.'
-  },
-  {
-    label: '🛡️ Air-Ride Vault',
-    text: 'Deliver sensitive optical wafer equipment from DP-07 to DP-08, 420 kg at 17:15 with air-ride vibration protection.'
   }
 ];
 
@@ -80,7 +88,16 @@ export const MerchantOrderChat: React.FC<MerchantOrderChatProps> = ({
 }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [aiInfo, setAiInfo] = useState<{ model: string; provider: string; ollama_detected: boolean } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load AI Model status from backend
+  useEffect(() => {
+    fetch('/api/v1/ai/status')
+      .then((r) => r.json())
+      .then((d) => setAiInfo(d))
+      .catch(() => {});
+  }, []);
 
   // Active chat orders count (Max 5 rule)
   const activeChatOrders = orders.filter(
@@ -93,7 +110,7 @@ export const MerchantOrderChat: React.FC<MerchantOrderChatProps> = ({
     {
       id: 'm-welcome',
       sender: 'agent',
-      text: 'Hello! I am your Meridian AI Fleet Dispatch & Tariff Agent. Tell me your delivery needs — origin, single or multi-stop dropoffs (up to 3 deliveries), cargo weight per stop, pickup time, and specialized EV chassis requirements (Dry Van, Cryo, Heavy Flatbed, Rapid Sprinter, Air-Ride Vault). I will compute your transparent per-km and per-kg rate, add GST, and schedule the ideal electric truck to arrive at your pickup point right on time!',
+      text: 'Hello! I am your Meridian AI Fleet Dispatch & SCADA Intelligence Agent powered by Open-Source Generative AI. \n\nYou can ask me technical questions about our clean energy microgrid (solar farms, 6,000 kWh BESS battery, charging bay locks, transactional outbox) or request multi-stop EV freight quotes with transparent per-km/per-kg tariffs and timed early depot dispatch!',
       timestamp: 'Ready'
     }
   ]);
@@ -158,6 +175,21 @@ export const MerchantOrderChat: React.FC<MerchantOrderChatProps> = ({
       }
 
       const data = await res.json();
+
+      // If response is a general technical inquiry or non-order intent, show conversational reply
+      if (!data.isOrderIntent || !data.parsedData) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `agent-${Date.now()}`,
+            sender: 'agent',
+            text: data.reply || 'Response from Meridian Open-Source Operations Agent.',
+            timestamp: formatTime(simHours)
+          }
+        ]);
+        return;
+      }
+
       const parsed = data.parsedData || {};
 
       // Resolve Origin Delivery Point
@@ -438,19 +470,23 @@ export const MerchantOrderChat: React.FC<MerchantOrderChatProps> = ({
             <Bot className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-slate-900">Meridian AI Merchant Dispatch Desk</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base font-bold text-slate-900">Meridian AI SCADA &amp; Dispatch Desk</h2>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <Sparkles className="w-3 h-3 text-indigo-600" />
+                <span>{aiInfo ? `${aiInfo.model}` : 'Open-Source AI (Llama 3.2)'}</span>
+              </span>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Live Pricing &amp; Timed Dispatch
+                Live SCADA &amp; Tariffs
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              Per-km &amp; per-kg automated pricing · Cold-chain, heavy-haul, &amp; fragile add-ons · Timed early depot departure
+              Open-Source Generative AI · Microgrid telemetry reasoning · Multi-stop route tariffs · Timed early depot departure
             </p>
           </div>
         </div>
 
-        {/* 5-Order Limit Badge */}
+        {/* Status & 5-Order Limit Badge */}
         <div className="flex items-center gap-3">
           <div className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
             isChatLimitReached

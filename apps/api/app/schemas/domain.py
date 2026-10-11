@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Base response envelope
 class ErrorDetail(BaseModel):
@@ -90,9 +90,9 @@ class TruckResponse(BaseModel):
 class DispatchTruckRequest(BaseModel):
     truck_id: int
     origin_point_id: int = 2
-    delivery_stop_ids: List[int]
-    total_weight_kg: float
-    box_count: int = 1
+    delivery_stop_ids: List[int] = Field(..., min_length=1)
+    total_weight_kg: float = Field(..., gt=0)
+    box_count: int = Field(default=1, ge=1)
 
 class DispatchTruckResponse(BaseModel):
     success: bool
@@ -103,13 +103,13 @@ class DispatchTruckResponse(BaseModel):
 
 # Order & Pricing Schemas
 class OrderDeliveryInput(BaseModel):
-    delivery_point_id: int
-    cargo_weight_kg: float
-    box_count: int = 1
+    delivery_point_id: int = Field(..., gt=0)
+    cargo_weight_kg: float = Field(..., gt=0)
+    box_count: int = Field(default=1, ge=1)
 
 class QuoteRequest(BaseModel):
-    distance_km: float = 15.0
-    weight_kg: float = 500.0
+    distance_km: float = Field(default=15.0, ge=0)
+    weight_kg: float = Field(default=500.0, ge=0)
     service_type: str = "standard-dry-van"
     extra_services: List[str] = []
     deliveries: Optional[List[OrderDeliveryInput]] = None
@@ -127,13 +127,21 @@ class QuoteResponse(BaseModel):
     total_amount: float
 
 class CreateOrderRequest(BaseModel):
-    customer_name: str
+    customer_name: str = Field(..., min_length=1, max_length=128)
     customer_phone: Optional[str] = None
     origin_point_id: int = 2
-    scheduled_pickup_time: str
+    scheduled_pickup_time: str = Field(..., min_length=1, max_length=64)
     service_type: str = "standard-dry-van"
     extra_services: List[str] = []
-    deliveries: List[OrderDeliveryInput]
+    deliveries: List[OrderDeliveryInput] = Field(..., min_length=1)
+
+    @field_validator("customer_name")
+    @classmethod
+    def customer_name_must_contain_non_whitespace(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("customer_name cannot be blank")
+        return value
 
 class OrderStopResponse(BaseModel):
     delivery_point_id: int

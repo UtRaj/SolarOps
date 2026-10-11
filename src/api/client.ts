@@ -61,6 +61,8 @@ export interface RedisStats {
   rate_limiter: { active_clients: number; blocked_requests: number };
 }
 
+const heldLockTokens = new Map<string, string>();
+
 export const apiClient = {
   // Health checks
   async getHealth() {
@@ -132,16 +134,20 @@ export const apiClient = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ resource, requester, ttl_sec })
     });
-    return res.json();
+    const result = await res.json();
+    if (res.ok && result.lock_token) heldLockTokens.set(resource, result.lock_token);
+    return result;
   },
 
-  async releaseRedisLock(resource: string) {
+  async releaseRedisLock(resource: string, lockToken = heldLockTokens.get(resource) ?? '') {
     const res = await fetch('/api/v1/redis/lock/release', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resource })
+      body: JSON.stringify({ resource, lock_token: lockToken })
     });
-    return res.json();
+    const result = await res.json();
+    if (res.ok) heldLockTokens.delete(resource);
+    return result;
   },
 
   // Prometheus Metrics API (Phase 10)
@@ -187,6 +193,29 @@ export const apiClient = {
       body: JSON.stringify({ message, activeChatOrdersCount })
     });
     if (!res.ok) throw new Error('Failed to send chat message');
+    return res.json();
+  },
+
+  // Chaos Engineering & Fault Injection (Milestone 5)
+  async injectChaos(scenario: string) {
+    const res = await fetch('/api/v1/chaos/inject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario })
+    });
+    if (!res.ok) throw new Error('Failed to inject chaos scenario');
+    return res.json();
+  },
+
+  async resetChaos() {
+    const res = await fetch('/api/v1/chaos/reset', { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to reset chaos state');
+    return res.json();
+  },
+
+  async getChaosStatus() {
+    const res = await fetch('/api/v1/chaos/status');
+    if (!res.ok) throw new Error('Failed to fetch chaos status');
     return res.json();
   }
 };

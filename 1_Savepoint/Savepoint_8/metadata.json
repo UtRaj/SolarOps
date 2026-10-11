@@ -1,6 +1,0 @@
-{
-  "name": "SolarOps: Clean Energy & EV Fleet Platform",
-  "description": "Next-generation solar microgrid digital twin and electric heavy-duty fleet operations platform featuring automated day/night charging, multi-stop dispatch, battery storage, and dynamic merchant freight quotation.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

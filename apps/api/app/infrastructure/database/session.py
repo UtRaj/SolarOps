@@ -19,7 +19,19 @@ AsyncSessionLocal = async_sessionmaker(
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+        yield session
+
+
+async def database_is_ready() -> bool:
+    from sqlalchemy import text
+
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
+        return True
+    except Exception:
+        return False
+
+
+async def close_database() -> None:
+    await engine.dispose()

@@ -8,6 +8,7 @@ import { LogisticsMap } from './components/LogisticsMap';
 import { TileDetailModal } from './components/TileDetailModal';
 import { OrderDashboard } from './components/OrderDashboard';
 import { MerchantOrderChat } from './components/MerchantOrderChat';
+import { EventArchitectureModal } from './components/EventArchitectureModal';
 
 import {
   ViewTab,
@@ -92,6 +93,7 @@ export default function App() {
 
   // Telemetry Inspector Modal
   const [activeModal, setActiveModal] = useState<DetailModalContent | null>(null);
+  const [isArchModalOpen, setIsArchModalOpen] = useState<boolean>(false);
 
   const addLog = useCallback((category: OperationalLog['category'], severity: OperationalLog['severity'], message: string) => {
     setLogs((prev) => [
@@ -1571,6 +1573,7 @@ export default function App() {
         grid3Active={grid3Active}
         ordersCount={orders.length}
         activeChatCount={orders.filter((o) => o.status === 'scheduled' || o.status === 'dispatched_to_pickup' || o.status === 'in_transit').length}
+        onOpenArchitecture={() => setIsArchModalOpen(true)}
       />
 
       {/* Main Content View Switcher */}
@@ -1670,6 +1673,9 @@ export default function App() {
 
       {/* Telemetry Detail Modal for Clicked Tiles */}
       <TileDetailModal content={activeModal} onClose={() => setActiveModal(null)} />
+
+      {/* Production Architecture & Outbox Inspection Modal */}
+      <EventArchitectureModal isOpen={isArchModalOpen} onClose={() => setIsArchModalOpen(false)} />
 
       {/* Compact Status Footer */}
       <footer className="border-t border-slate-200/80 bg-white py-3 px-4 text-center text-xs text-slate-400">

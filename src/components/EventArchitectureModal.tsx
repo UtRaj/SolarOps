@@ -16,7 +16,8 @@ import {
   BarChart3,
   Cpu,
   Terminal,
-  Zap
+  Zap,
+  Flame
 } from 'lucide-react';
 import { useOutbox } from '../features/events/useOutbox';
 import { useAlerts } from '../features/alerts/useAlerts';
@@ -29,7 +30,7 @@ interface EventArchitectureModalProps {
 
 export const EventArchitectureModal: React.FC<EventArchitectureModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<
-    'events' | 'realtime' | 'redis' | 'dlq' | 'observability' | 'alerts' | 'phases'
+    'events' | 'realtime' | 'redis' | 'dlq' | 'observability' | 'alerts' | 'phases' | 'chaos'
   >('phases');
 
   const { events, stats, refetch: refetchOutbox } = useOutbox();
@@ -42,23 +43,57 @@ export const EventArchitectureModal: React.FC<EventArchitectureModalProps> = ({ 
   const [realtimePulses, setRealtimePulses] = useState<any[]>([]);
   const [isRetryingDlq, setIsRetryingDlq] = useState<string | null>(null);
   const [isLoadingSubsystems, setIsLoadingSubsystems] = useState<boolean>(false);
+  const [chaosStatus, setChaosStatus] = useState<any>(null);
+  const [isInjectingChaos, setIsInjectingChaos] = useState<boolean>(false);
 
   // Load subsystem states
   const loadSubsystems = async () => {
     setIsLoadingSubsystems(true);
     try {
-      const [dlq, redis, metrics] = await Promise.all([
+      const [dlq, redis, metrics, chaos] = await Promise.all([
         apiClient.getDlqRecords().catch(() => []),
         apiClient.getRedisStats().catch(() => null),
-        apiClient.getMetrics().catch(() => '')
+        apiClient.getMetrics().catch(() => ''),
+        apiClient.getChaosStatus().catch(() => null)
       ]);
       setDlqItems(dlq);
       setRedisStats(redis);
       setMetricsText(metrics);
+      setChaosStatus(chaos);
     } catch (e) {
       console.error('Failed to load subsystems', e);
     } finally {
       setIsLoadingSubsystems(false);
+    }
+  };
+
+  const handleInjectChaos = async (scenario: string) => {
+    setIsInjectingChaos(true);
+    try {
+      const res = await apiClient.injectChaos(scenario);
+      setChaosStatus(res.state);
+      refetchOutbox();
+      refetchAlerts();
+      const updatedDlq = await apiClient.getDlqRecords().catch(() => []);
+      setDlqItems(updatedDlq);
+    } catch (e) {
+      console.error('Failed to inject chaos', e);
+    } finally {
+      setIsInjectingChaos(false);
+    }
+  };
+
+  const handleResetChaos = async () => {
+    setIsInjectingChaos(true);
+    try {
+      const res = await apiClient.resetChaos();
+      setChaosStatus(res.state);
+      refetchOutbox();
+      refetchAlerts();
+    } catch (e) {
+      console.error('Failed to reset chaos', e);
+    } finally {
+      setIsInjectingChaos(false);
     }
   };
 
@@ -200,6 +235,17 @@ export const EventArchitectureModal: React.FC<EventArchitectureModalProps> = ({ 
           >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
             Alerts ({alerts.filter((a) => a.status === 'OPEN').length})
+          </button>
+          <button
+            onClick={() => setActiveTab('chaos')}
+            className={`py-3 px-3 text-xs font-bold border-b-2 whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'chaos'
+                ? 'border-red-600 text-red-700'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-red-600" />
+            Chaos Mode {chaosStatus?.activeFault ? '⚠️ ACTIVE' : ''}
           </button>
         </div>
 
@@ -569,6 +615,141 @@ export const EventArchitectureModal: React.FC<EventArchitectureModalProps> = ({ 
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Chaos Engineering Tab */}
+          {activeTab === 'chaos' && (
+            <div className="space-y-4">
+              <div className="bg-red-50/50 p-4 rounded-xl border border-red-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-red-900 flex items-center gap-1.5">
+                    <Flame className="w-4 h-4 text-red-600" />
+                    Interactive Chaos Engineering &amp; Self-Healing Verification
+                  </h3>
+                  <p className="text-xs text-red-700/80 mt-0.5">
+                    Inject production failure modes to demonstrate automated failovers, Redis lock contention, BESS safety responses, and Outbox/DLQ quarantine.
+                  </p>
+                </div>
+                {chaosStatus?.activeFault && (
+                  <button
+                    onClick={handleResetChaos}
+                    disabled={isInjectingChaos}
+                    className="px-3 py-1.5 text-xs font-bold bg-white border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors shadow-2xs cursor-pointer whitespace-nowrap"
+                  >
+                    Reset All Faults
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                {/* Fault 1: Solar Collapse */}
+                <div className={`p-4 rounded-xl border transition-all ${
+                  chaosStatus?.solarDropActive
+                    ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-200'
+                    : 'bg-white border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <strong className="text-amber-800 font-bold flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-amber-600" />
+                      1. Solar Infeed Rapid Collapse (-85%)
+                    </strong>
+                    {chaosStatus?.solarDropActive && (
+                      <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-300">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-slate-600 mb-3">
+                    Simulates sudden dense storm cloud formation over North &amp; South Solar Farms. Solar generation drops from 2,600 kW to ~300 kW. Triggers BESS emergency microgrid discharge.
+                  </p>
+                  <button
+                    onClick={() => handleInjectChaos('SOLAR_DROP')}
+                    disabled={isInjectingChaos || chaosStatus?.solarDropActive}
+                    className="w-full py-2 font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {chaosStatus?.solarDropActive ? 'Fault Injected (Check Alerts)' : 'Inject Solar Collapse'}
+                  </button>
+                </div>
+
+                {/* Fault 2: Charger Contention */}
+                <div className={`p-4 rounded-xl border transition-all ${
+                  chaosStatus?.chargerContentionActive
+                    ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
+                    : 'bg-white border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <strong className="text-blue-800 font-bold flex items-center gap-1.5">
+                      <Lock className="w-4 h-4 text-blue-600" />
+                      2. Fast DC Charger Bay Saturation
+                    </strong>
+                    {chaosStatus?.chargerContentionActive && (
+                      <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full border border-blue-300">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-slate-600 mb-3">
+                    Simulates simultaneous charging requests exceeding the 5 Fast DC bays limit. Demonstrates Redis distributed lock contention and automated queue management.
+                  </p>
+                  <button
+                    onClick={() => handleInjectChaos('CHARGER_CONTENTION')}
+                    disabled={isInjectingChaos || chaosStatus?.chargerContentionActive}
+                    className="w-full py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {chaosStatus?.chargerContentionActive ? 'Bays Locked (Check Redis Tab)' : 'Inject Charger Saturation'}
+                  </button>
+                </div>
+
+                {/* Fault 3: BESS Thermal Spike */}
+                <div className={`p-4 rounded-xl border transition-all ${
+                  chaosStatus?.bessThermalSpikeActive
+                    ? 'bg-red-50 border-red-300 ring-2 ring-red-200'
+                    : 'bg-white border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <strong className="text-red-800 font-bold flex items-center gap-1.5">
+                      <Flame className="w-4 h-4 text-red-600" />
+                      3. BESS Cell Thermal Spike (38.6°C)
+                    </strong>
+                    {chaosStatus?.bessThermalSpikeActive && (
+                      <span className="text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded-full border border-red-300">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-slate-600 mb-3">
+                    Overheats BESS battery core beyond the 30°C nominal threshold. Demonstrates operational telemetry alerting and automated liquid cooling actuation.
+                  </p>
+                  <button
+                    onClick={() => handleInjectChaos('BESS_THERMAL_ALERT')}
+                    disabled={isInjectingChaos || chaosStatus?.bessThermalSpikeActive}
+                    className="w-full py-2 font-bold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {chaosStatus?.bessThermalSpikeActive ? 'Thermal Warning Live' : 'Inject Thermal Spike'}
+                  </button>
+                </div>
+
+                {/* Fault 4: Poison Message Quarantine */}
+                <div className="p-4 rounded-xl border bg-white border-slate-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <strong className="text-purple-800 font-bold flex items-center gap-1.5">
+                      <RotateCcw className="w-4 h-4 text-purple-600" />
+                      4. Poison Message Quarantine (DLQ)
+                    </strong>
+                  </div>
+                  <p className="text-slate-600 mb-3">
+                    Injects a corrupted event payload with malformed schema into the outbox. After 3 backoff retries fail, it is quarantined in the DLQ for operator inspection and replay.
+                  </p>
+                  <button
+                    onClick={() => handleInjectChaos('POISON_MESSAGE')}
+                    disabled={isInjectingChaos}
+                    className="w-full py-2 font-bold rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    Inject Poison Event into DLQ
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

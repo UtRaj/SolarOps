@@ -10,7 +10,8 @@ import {
   BatteryCharging,
   Sliders,
   ChevronDown,
-  Compass
+  Compass,
+  Layers
 } from 'lucide-react';
 import { ViewTab, WeatherType } from '../types';
 import { formatTime } from '../utils/solarPhysics';
@@ -31,6 +32,7 @@ interface HeaderProps {
   grid3Active: boolean;
   ordersCount?: number;
   activeChatCount?: number;
+  onOpenArchitecture?: () => void;
 }
 
 const SPEED_OPTIONS = [
@@ -73,7 +75,8 @@ export const Header: React.FC<HeaderProps> = ({
   activeTruckChargersCount,
   grid3Active,
   ordersCount = 0,
-  activeChatCount = 0
+  activeChatCount = 0,
+  onOpenArchitecture
 }) => {
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
@@ -99,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Global Key Status Badges */}
+        {/* Global Key Status Badges & Architecture Modal Trigger */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Night / Day Policy Badge */}
           <div
@@ -135,6 +138,17 @@ export const Header: React.FC<HeaderProps> = ({
             <Zap className="w-3.5 h-3.5" />
             <span>GS-03: {grid3Active ? 'Online (Batteries)' : 'Standby'}</span>
           </div>
+
+          {/* 🏛️ Production Architecture & Outbox Modal Trigger */}
+          <button
+            id="open-architecture-btn"
+            onClick={onOpenArchitecture}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer"
+            title="Inspect 14-Phase Blueprint, NATS Outbox events, Redis locks, Dead Letter Queue, and Chaos mode"
+          >
+            <Layers className="w-3.5 h-3.5 text-white" />
+            <span>🏛️ Architecture &amp; Outbox</span>
+          </button>
         </div>
       </div>
 
